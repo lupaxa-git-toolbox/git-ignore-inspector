@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lupaxa-git-ignore-inspector"
+dynamic = ["version"]
+description = "Read-only command-line diagnostics for inspecting, explaining, and auditing Git ignore rules."
+readme = "README.md"
+license = { file = "LICENCE" }
+requires-python = ">=3.11"
+authors = [{ name = "The Lupaxa Project" }]
+keywords = ["git", "gitignore", "cli", "diagnostics"]
+dependencies = []
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Version Control :: Git",
+]
+
+[project.urls]
+Homepage = "https://github.com/lupaxa-git-toolbox/git-ignore-inspector"
+Repository = "https://github.com/lupaxa-git-toolbox/git-ignore-inspector"
+Issues = "https://github.com/lupaxa-git-toolbox/git-ignore-inspector/issues"
+
+[project.scripts]
+git-ignore-inspector = "lupaxa.git_ignore_inspector.cli:main"
+gii = "lupaxa.git_ignore_inspector.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.6.0",
+  "mypy>=1.12.0",
+  "hatch>=1.12.0",
+  "bump-my-version>=1.2.0",
+  "pip-audit>=2.7.0",
+]
+test = ["pytest>=8.0", "pytest-cov>=5.0"]
+
+[tool.hatch.version]
+path = "src/lupaxa/git_ignore_inspector/version.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["src/**", "README.md", "LICENCE"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lupaxa"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+mypy_path = "src"
+explicit_package_bases = true
+namespace_packages = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "-ra -q --disable-warnings"
+testpaths = ["tests"]
+pythonpath = ["src"]
