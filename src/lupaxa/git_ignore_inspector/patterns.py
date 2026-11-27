@@ -86,23 +86,15 @@ def explain_constructs(pattern: str) -> list[str]:
     notes: list[str] = []
     body = pattern_body(pattern)
     if is_negation(pattern):
-        notes.append(
-            "The leading ! is a negation. It re-includes a path that an earlier rule excluded."
-        )
+        notes.append("The leading ! is a negation. It re-includes a path that an earlier rule excluded.")
     if body.endswith("/") and not body.endswith(r"\/"):
         notes.append("The trailing / limits the pattern to directories.")
     if body.startswith("/"):
-        notes.append(
-            "The leading / anchors the pattern to the directory that contains this ignore file."
-        )
+        notes.append("The leading / anchors the pattern to the directory that contains this ignore file.")
     elif "/" in body.strip("/"):
-        notes.append(
-            "A slash inside the pattern anchors it to the directory that contains this ignore file."
-        )
+        notes.append("A slash inside the pattern anchors it to the directory that contains this ignore file.")
     else:
-        notes.append(
-            "The pattern is not anchored, so it can match in any directory under the ignore file."
-        )
+        notes.append("The pattern is not anchored, so it can match in any directory under the ignore file.")
     if "**" in body:
         notes.append("** matches across directory boundaries.")
     if "*" in body.replace("**", ""):
@@ -149,12 +141,7 @@ def redundant_patterns(parsed: IgnoreFile) -> list[tuple[int, str, int, str]]:
     for line in parsed.lines:
         if line.kind != "pattern":
             continue
-        if (
-            broader is not None
-            and not is_negation(line.text)
-            and line.text != broader.text
-            and _covered(broader.text, line.text)
-        ):
+        if broader is not None and not is_negation(line.text) and line.text != broader.text and _covered(broader.text, line.text):
             found.append((line.number, line.text, broader.number, broader.text))
         if is_negation(line.text):
             broader = None

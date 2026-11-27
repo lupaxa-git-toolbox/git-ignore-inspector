@@ -21,12 +21,7 @@ def git_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     xdg = home / ".config"
     xdg.mkdir(parents=True)
     config = home / "gitconfig"
-    config.write_text(
-        "[init]\n\tdefaultBranch = master\n"
-        "[user]\n\tname = Test\n\temail = test@example.com\n"
-        "[core]\n\tautocrlf = false\n",
-        encoding="utf-8",
-    )
+    config.write_text("[init]\n\tdefaultBranch = master\n[user]\n\tname = Test\n\temail = test@example.com\n[core]\n\tautocrlf = false\n", encoding="utf-8")
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(xdg))
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(config))

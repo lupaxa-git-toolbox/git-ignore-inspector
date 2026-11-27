@@ -102,25 +102,10 @@ def _parse(payload: dict[str, object], path: Path) -> AppConfig:
         suppressed = _string_set(audit["suppressed"], "audit.suppressed", path)
     if not unused:
         enabled.discard("unused")
-    return AppConfig(
-        output=output,
-        color=color,
-        max_results=max_results,
-        expand_ignored_directories=expand,
-        unused_rule_analysis=unused,
-        audit_enabled=enabled,
-        suppressed=suppressed,
-        path=path,
-    )
+    return AppConfig(output=output, color=color, max_results=max_results, expand_ignored_directories=expand, unused_rule_analysis=unused, audit_enabled=enabled, suppressed=suppressed, path=path)
 
 
-def _choice(
-    payload: dict[str, object],
-    key: str,
-    allowed: frozenset[str],
-    default: str,
-    path: Path,
-) -> str:
+def _choice(payload: dict[str, object], key: str, allowed: frozenset[str], default: str, path: Path) -> str:
     value = payload.get(key, default)
     if not isinstance(value, str) or value not in allowed:
         options = ", ".join(sorted(allowed))

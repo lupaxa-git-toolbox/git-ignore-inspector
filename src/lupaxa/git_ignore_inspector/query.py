@@ -10,12 +10,7 @@ from pathlib import Path
 from lupaxa.git_ignore_inspector.errors import ToolError
 from lupaxa.git_ignore_inspector.gitio import GitResult, GitRunner, decode, encode
 from lupaxa.git_ignore_inspector.models import Classification, Rule
-from lupaxa.git_ignore_inspector.patterns import (
-    explain_constructs,
-    explains_parent_exclusion,
-    is_negation,
-    read_ignore_file,
-)
+from lupaxa.git_ignore_inspector.patterns import explain_constructs, explains_parent_exclusion, is_negation, read_ignore_file
 
 _RECORD_FIELDS = 4
 
@@ -118,11 +113,7 @@ def open_repository(runner: GitRunner, start: Path) -> Repository:
     root = _abs_path(runner, start, ["rev-parse", "--show-toplevel"])
     git_dir = _abs_path(runner, root, ["rev-parse", "--absolute-git-dir"])
     common = _abs_path(runner, root, ["rev-parse", "--path-format=absolute", "--git-common-dir"])
-    exclude = _abs_path(
-        runner,
-        root,
-        ["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"],
-    )
+    exclude = _abs_path(runner, root, ["rev-parse", "--path-format=absolute", "--git-path", "info/exclude"])
     global_path, configured = _global_excludes(runner, root)
     ignore_case = _ignore_case(runner, root)
     worktree = (root / ".git").is_file() or git_dir.resolve() != common.resolve()
@@ -144,11 +135,7 @@ def open_repository(runner: GitRunner, start: Path) -> Repository:
 def require_worktree(repo: Repository) -> None:
     """Stop commands that need a working tree when the repository is bare."""
     if repo.bare:
-        raise ToolError(
-            "BARE_REPOSITORY",
-            "Bare repositories have no working tree, so ignore inspection is not supported.",
-            4,
-        )
+        raise ToolError("BARE_REPOSITORY", "Bare repositories have no working tree, so ignore inspection is not supported.", 4)
 
 
 def inspect_path(repo: Repository, requested: str, cwd: Path) -> PathStatus:
@@ -160,14 +147,7 @@ def inspect_path(repo: Repository, requested: str, cwd: Path) -> PathStatus:
         inside = _is_relative_to(boundary.resolve(), repo.root.resolve())
     except OSError as exc:
         return PathStatus(
-            requested=requested,
-            classification=Classification.ERROR,
-            tracked=False,
-            ignored=False,
-            relative_path=None,
-            rule=None,
-            explanation=[],
-            message=f"Could not resolve {requested}: {exc}",
+            requested=requested, classification=Classification.ERROR, tracked=False, ignored=False, relative_path=None, rule=None, explanation=[], message=f"Could not resolve {requested}: {exc}"
         )
     if not inside:
         return PathStatus(
@@ -183,11 +163,7 @@ def inspect_path(repo: Repository, requested: str, cwd: Path) -> PathStatus:
             message="The path is outside the selected repository.",
         )
     owning = _owning_root(repo.runner, boundary)
-    if (
-        owning is not None
-        and owning.resolve() != repo.root.resolve()
-        and not _same_path(absolute, owning)
-    ):
+    if owning is not None and owning.resolve() != repo.root.resolve() and not _same_path(absolute, owning):
         return PathStatus(
             requested=requested,
             classification=Classification.NESTED_REPOSITORY,
@@ -228,13 +204,7 @@ def inspect_path(repo: Repository, requested: str, cwd: Path) -> PathStatus:
     )
 
 
-def explain_status(
-    repo: Repository,
-    relative: str,
-    tracked: bool,
-    ignored: bool,
-    rule: Rule | None,
-) -> list[str]:
+def explain_status(repo: Repository, relative: str, tracked: bool, ignored: bool, rule: Rule | None) -> list[str]:
     """Build the prose explanation for one classified path."""
     tracked_text = "tracked" if tracked else "not tracked"
     if ignored:
@@ -250,21 +220,14 @@ def explain_status(
     if rule is None:
         lines.append("Git did not report an ignore rule for this path.")
         return lines
-    lines.append(
-        f"Effective pattern `{rule.pattern}` from {rule.source}:{rule.line} ({rule.source_type})."
-    )
+    lines.append(f"Effective pattern `{rule.pattern}` from {rule.source}:{rule.line} ({rule.source_type}).")
     lines.extend(explain_constructs(rule.pattern))
     if rule.negation:
         lines.append("The effective rule is a negation, so the path is not ignored.")
     if explains_parent_exclusion(rule.pattern, relative):
-        lines.append(
-            "This rule excludes a parent directory. A negation cannot re-include a file "
-            "inside that directory unless each excluded parent is also made traversable."
-        )
+        lines.append("This rule excludes a parent directory. A negation cannot re-include a file inside that directory unless each excluded parent is also made traversable.")
     if tracked and ignored:
-        lines.append(
-            "Ignore rules do not stop Git from tracking a file that is already in the index."
-        )
+        lines.append("Ignore rules do not stop Git from tracking a file that is already in the index.")
     if repo.ignore_case is True:
         lines.append("This repository uses case-insensitive ignore matching (core.ignorecase).")
     elif repo.ignore_case is False:
@@ -272,16 +235,7 @@ def explain_status(
     return lines
 
 
-def list_ignored(
-    repo: Repository,
-    *,
-    files: bool,
-    directories: bool,
-    expand: bool,
-    directory: str | None,
-    extension: str | None,
-    limit: int,
-) -> Enumeration:
+def list_ignored(repo: Repository, *, files: bool, directories: bool, expand: bool, directory: str | None, extension: str | None, limit: int) -> Enumeration:
     """Enumerate ignored untracked paths. The default view keeps Git's collapsed directories."""
     require_worktree(repo)
     collapsed = _collapsed_ignored(repo)
@@ -308,15 +262,7 @@ def list_ignored(
     truncated = limit >= 0 and total > limit
     visible = selected if not truncated else selected[:limit]
     rules = _rules_for(repo, [item[0] for item in visible], no_index=False)
-    entries = [
-        ListedPath(
-            path=rel,
-            kind=kind,
-            collapsed=collapsed_dir,
-            rule=rules.get(rel.rstrip("/"), rules.get(rel)),
-        )
-        for rel, kind, collapsed_dir in visible
-    ]
+    entries = [ListedPath(path=rel, kind=kind, collapsed=collapsed_dir, rule=rules.get(rel.rstrip("/"), rules.get(rel))) for rel, kind, collapsed_dir in visible]
     for entry in entries:
         if entry.rule is None:
             entry.rule = rules.get(entry.path)
@@ -334,13 +280,9 @@ def collect_sources(repo: Repository, target: str | None = None) -> list[SourceI
         sources.append(_file_source("gitignore", path, in_working_tree=True, scope=scope))
     sources.append(_file_source("exclude", repo.exclude_file, in_working_tree=False, scope=None))
     if repo.global_configured and repo.global_excludes is not None:
-        sources.append(
-            _file_source("global", repo.global_excludes, in_working_tree=False, scope=None)
-        )
+        sources.append(_file_source("global", repo.global_excludes, in_working_tree=False, scope=None))
     else:
-        sources.append(
-            _file_source("global", repo.default_excludes, in_working_tree=False, scope=None)
-        )
+        sources.append(_file_source("global", repo.default_excludes, in_working_tree=False, scope=None))
     if target is not None:
         relative = target.strip("/")
         for source in sources:
@@ -363,11 +305,7 @@ def tracked_matches(repo: Repository, *, limit: int) -> tuple[list[tuple[str, Ru
     truncated_input = limit >= 0 and len(paths) > limit
     scanned = paths if not truncated_input else paths[:limit]
     rules = _rules_for(repo, scanned, no_index=True)
-    matched = [
-        (path, rule)
-        for path, rule in ((item, rules.get(item)) for item in scanned)
-        if rule is not None and not rule.negation
-    ]
+    matched = [(path, rule) for path, rule in ((item, rules.get(item)) for item in scanned) if rule is not None and not rule.negation]
     total = len(matched)
     truncated = truncated_input or (limit >= 0 and total > limit)
     visible = matched if limit < 0 or total <= limit else matched[:limit]
@@ -384,41 +322,18 @@ def _status_message(classification: Classification, relative: str) -> str:
         Classification.IGNORED: f"{relative} is ignored and is not tracked.",
         Classification.NOT_IGNORED: f"{relative} is not ignored and is not tracked.",
         Classification.TRACKED: f"{relative} is tracked by Git.",
-        Classification.TRACKED_IGNORED: (
-            f"{relative} is tracked by Git and would match an ignore rule if it were untracked."
-        ),
+        Classification.TRACKED_IGNORED: (f"{relative} is tracked by Git and would match an ignore rule if it were untracked."),
     }
     return messages.get(classification, relative)
 
 
-def _file_source(
-    source_type: str, path: Path, *, in_working_tree: bool, scope: str | None
-) -> SourceInfo:
+def _file_source(source_type: str, path: Path, *, in_working_tree: bool, scope: str | None) -> SourceInfo:
     if not path.exists():
-        return SourceInfo(
-            source_type=source_type,
-            path=str(path),
-            exists=False,
-            readable=False,
-            patterns=0,
-            comments=0,
-            blanks=0,
-            in_working_tree=in_working_tree,
-            scope=scope,
-        )
+        return SourceInfo(source_type=source_type, path=str(path), exists=False, readable=False, patterns=0, comments=0, blanks=0, in_working_tree=in_working_tree, scope=scope)
     parsed = read_ignore_file(path)
     if not parsed.readable:
         return SourceInfo(
-            source_type=source_type,
-            path=str(path),
-            exists=True,
-            readable=False,
-            patterns=None,
-            comments=None,
-            blanks=None,
-            in_working_tree=in_working_tree,
-            scope=scope,
-            error=parsed.error,
+            source_type=source_type, path=str(path), exists=True, readable=False, patterns=None, comments=None, blanks=None, in_working_tree=in_working_tree, scope=scope, error=parsed.error
         )
     return SourceInfo(
         source_type=source_type,
@@ -494,14 +409,10 @@ def _walk_files(repo: Repository, directory: str) -> list[str]:
         return found
     for dirpath, dirnames, filenames in os.walk(base):
         current = Path(dirpath)
-        dirnames[:] = [
-            name for name in dirnames if name != ".git" and not (current / name / ".git").exists()
-        ]
+        dirnames[:] = [name for name in dirnames if name != ".git" and not (current / name / ".git").exists()]
         for name in filenames:
             full = current / name
-            if full.is_symlink() and not _is_relative_to(
-                full.parent.resolve(), repo.root.resolve()
-            ):
+            if full.is_symlink() and not _is_relative_to(full.parent.resolve(), repo.root.resolve()):
                 continue
             found.append(_relative(repo.root, full, directory=False))
     found.sort()
@@ -512,9 +423,7 @@ def _is_tracked(repo: Repository, relative: str) -> bool:
     key = relative.rstrip("/")
     if key in {"", "."}:
         return False
-    result = repo.runner.run(
-        ["-C", str(repo.root), "-c", "core.quotepath=false", "ls-files", "-z", "--", key]
-    )
+    result = repo.runner.run(["-C", str(repo.root), "-c", "core.quotepath=false", "ls-files", "-z", "--", key])
     _raise_git(result, "Could not tell whether the path is tracked.")
     return key in set(_split_paths(result.stdout))
 
@@ -551,11 +460,7 @@ def _parse_records(payload: bytes) -> list[tuple[str, int, str, str]]:
         parts = parts[:-1]
     records: list[tuple[str, int, str, str]] = []
     if len(parts) % _RECORD_FIELDS != 0:
-        raise ToolError(
-            "GIT_FAILED",
-            "Git returned a check-ignore record that could not be parsed.",
-            4,
-        )
+        raise ToolError("GIT_FAILED", "Git returned a check-ignore record that could not be parsed.", 4)
     for index in range(0, len(parts), _RECORD_FIELDS):
         source = decode(parts[index])
         line_text = decode(parts[index + 1])
@@ -564,23 +469,13 @@ def _parse_records(payload: bytes) -> list[tuple[str, int, str, str]]:
         try:
             line = int(line_text)
         except ValueError as exc:
-            raise ToolError(
-                "GIT_FAILED",
-                f"Git returned a non-numeric ignore line number: {line_text}",
-                4,
-            ) from exc
+            raise ToolError("GIT_FAILED", f"Git returned a non-numeric ignore line number: {line_text}", 4) from exc
         records.append((source, line, pattern, pathname))
     return records
 
 
 def _make_rule(repo: Repository, source: str, line: int, pattern: str) -> Rule:
-    return Rule(
-        source=source,
-        source_type=_source_type(repo, source),
-        line=line,
-        pattern=pattern,
-        negation=is_negation(pattern),
-    )
+    return Rule(source=source, source_type=_source_type(repo, source), line=line, pattern=pattern, negation=is_negation(pattern))
 
 
 def _source_type(repo: Repository, source: str) -> str:

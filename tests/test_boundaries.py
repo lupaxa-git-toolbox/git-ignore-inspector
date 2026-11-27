@@ -52,9 +52,7 @@ def test_submodule_is_a_boundary(repo: Path, cli, tmp_path: Path) -> None:
     run_git(child, "init", "-q")
     (child / "lib.txt").write_text("x", encoding="utf-8")
     commit_all(child)
-    run_git(
-        repo, "-c", "protocol.file.allow=always", "submodule", "add", "-q", child.as_uri(), "vendor"
-    )
+    run_git(repo, "-c", "protocol.file.allow=always", "submodule", "add", "-q", child.as_uri(), "vendor")
     (repo / "vendor" / "lib.txt").write_text("changed", encoding="utf-8")
     code, out, _err = cli(repo, ["check", "vendor/lib.txt", "--json"])
     assert code == 0

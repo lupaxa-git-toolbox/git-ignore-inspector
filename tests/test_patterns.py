@@ -2,14 +2,7 @@
 
 from __future__ import annotations
 
-from lupaxa.git_ignore_inspector.patterns import (
-    classify_line,
-    duplicate_groups,
-    explain_constructs,
-    explains_parent_exclusion,
-    read_ignore_file,
-    redundant_patterns,
-)
+from lupaxa.git_ignore_inspector.patterns import classify_line, duplicate_groups, explain_constructs, explains_parent_exclusion, read_ignore_file, redundant_patterns
 
 
 def test_classify_line_strips_unescaped_trailing_space(tmp_path) -> None:

@@ -14,25 +14,8 @@ from pathlib import Path
 
 from lupaxa.git_ignore_inspector.config import AppConfig
 from lupaxa.git_ignore_inspector.models import Finding, Rule, Status
-from lupaxa.git_ignore_inspector.patterns import (
-    IgnoreFile,
-    duplicate_groups,
-    is_negation,
-    pattern_body,
-    read_ignore_file,
-    redundant_patterns,
-    suspicious_syntax,
-)
-from lupaxa.git_ignore_inspector.query import (
-    ListedPath,
-    Repository,
-    _is_tracked,
-    _nested_gitignores,
-    _rules_for,
-    ignored_census,
-    list_ignored,
-    tracked_matches,
-)
+from lupaxa.git_ignore_inspector.patterns import IgnoreFile, duplicate_groups, is_negation, pattern_body, read_ignore_file, redundant_patterns, suspicious_syntax
+from lupaxa.git_ignore_inspector.query import ListedPath, Repository, _is_tracked, _nested_gitignores, _rules_for, ignored_census, list_ignored, tracked_matches
 
 _CHECKS = ("duplicates", "redundant", "unused", "tracked", "confusing")
 
@@ -60,15 +43,7 @@ def analyse(repo: Repository, config: AppConfig) -> Analysis:
     ignored_files, ignored_directories, collapsed = ignored_census(repo)
     analysis.ignored_files = ignored_files
     analysis.ignored_directories = ignored_directories
-    listed = list_ignored(
-        repo,
-        files=False,
-        directories=False,
-        expand=config.expand_ignored_directories,
-        directory=None,
-        extension=None,
-        limit=config.max_results,
-    )
+    listed = list_ignored(repo, files=False, directories=False, expand=config.expand_ignored_directories, directory=None, extension=None, limit=config.max_results)
     analysis.truncated = listed.truncated or (len(collapsed) > config.max_results)
     analysis.top_patterns = _top_patterns(listed.entries)
 
@@ -115,10 +90,7 @@ def analyse(repo: Repository, config: AppConfig) -> Analysis:
                 id="enum.truncated",
                 category="limits",
                 status=Status.WARN,
-                message=(
-                    "Enumeration stopped at the configured limit. "
-                    "Counts that depend on every match are incomplete."
-                ),
+                message=("Enumeration stopped at the configured limit. Counts that depend on every match are incomplete."),
                 details={"max_results": config.max_results},
                 recommendation="Raise max_results or narrow the repository and run the command again.",
             )
@@ -127,12 +99,7 @@ def analyse(repo: Repository, config: AppConfig) -> Analysis:
     if "unused" in config.audit_enabled:
         if analysis.truncated:
             analysis.unused = None
-            _skip(
-                analysis,
-                "audit.unused",
-                "unused",
-                "Unused-rule analysis was skipped because enumeration is incomplete.",
-            )
+            _skip(analysis, "audit.unused", "unused", "Unused-rule analysis was skipped because enumeration is incomplete.")
         else:
             used = _used_keys(repo, listed.entries, tracked)
             unused_count = 0
@@ -147,29 +114,18 @@ def analyse(repo: Repository, config: AppConfig) -> Analysis:
                                 id="audit.unused",
                                 category="unused",
                                 status=Status.WARN,
-                                message=(
-                                    f"{_display(repo, path)}:{line.number} pattern `{line.text}` "
-                                    "matched no enumerated path."
-                                ),
+                                message=(f"{_display(repo, path)}:{line.number} pattern `{line.text}` matched no enumerated path."),
                                 details={
                                     "path": str(path),
                                     "line": line.number,
                                     "pattern": line.text,
                                 },
-                                recommendation=(
-                                    "No action is required. A rule can be intentional even when "
-                                    "nothing in the current working tree matches it."
-                                ),
+                                recommendation=("No action is required. A rule can be intentional even when nothing in the current working tree matches it."),
                             )
                         )
             analysis.unused = unused_count
             if unused_count == 0:
-                _pass(
-                    analysis,
-                    "audit.unused",
-                    "unused",
-                    "Every ignore rule matched an enumerated path.",
-                )
+                _pass(analysis, "audit.unused", "unused", "Every ignore rule matched an enumerated path.")
     else:
         analysis.unused = None
         _skip(analysis, "audit.unused", "unused", "Unused-rule analysis is disabled.")
@@ -185,13 +141,7 @@ def analyse(repo: Repository, config: AppConfig) -> Analysis:
     return analysis
 
 
-def _pattern_checks(
-    analysis: Analysis,
-    config: AppConfig,
-    repo: Repository,
-    path: Path,
-    parsed: IgnoreFile,
-) -> None:
+def _pattern_checks(analysis: Analysis, config: AppConfig, repo: Repository, path: Path, parsed: IgnoreFile) -> None:
     if "duplicates" in config.audit_enabled:
         groups = duplicate_groups(parsed)
         analysis.duplicate_groups += len(groups)
@@ -201,10 +151,7 @@ def _pattern_checks(
                     id="audit.duplicates",
                     category="duplicates",
                     status=Status.WARN,
-                    message=(
-                        f"Pattern `{pattern}` is repeated in {_display(repo, path)} "
-                        f"on lines {', '.join(str(number) for number in numbers)}."
-                    ),
+                    message=(f"Pattern `{pattern}` is repeated in {_display(repo, path)} on lines {', '.join(str(number) for number in numbers)}."),
                     details={
                         "path": str(path),
                         "pattern": pattern,
@@ -223,10 +170,7 @@ def _pattern_checks(
                     id="audit.redundant",
                     category="redundant",
                     status=Status.WARN,
-                    message=(
-                        f"{_display(repo, path)}:{line_number} pattern `{pattern}` is covered by "
-                        f"`{broader}` on line {broader_line}."
-                    ),
+                    message=(f"{_display(repo, path)}:{line_number} pattern `{pattern}` is covered by `{broader}` on line {broader_line}."),
                     details={
                         "path": str(path),
                         "line": line_number,
@@ -246,10 +190,7 @@ def _pattern_checks(
                     id="audit.confusing",
                     category="confusing",
                     status=Status.WARN,
-                    message=(
-                        f"{_display(repo, path)}:{line.number} has trailing whitespace. "
-                        "Git ignores unescaped trailing spaces."
-                    ),
+                    message=(f"{_display(repo, path)}:{line.number} has trailing whitespace. Git ignores unescaped trailing spaces."),
                     details={"path": str(path), "line": line.number, "pattern": line.text},
                     recommendation="Remove the trailing space or escape it with a backslash.",
                 )
@@ -272,9 +213,7 @@ def _pattern_checks(
             _negation_probe(analysis, repo, path, line.number, line.text)
 
 
-def _negation_probe(
-    analysis: Analysis, repo: Repository, path: Path, line: int, pattern: str
-) -> None:
+def _negation_probe(analysis: Analysis, repo: Repository, path: Path, line: int, pattern: str) -> None:
     relative = _probe_path(repo, path, pattern)
     if relative is None:
         return
@@ -289,10 +228,7 @@ def _negation_probe(
             id="audit.confusing",
             category="confusing",
             status=Status.WARN,
-            message=(
-                f"{_display(repo, path)}:{line} negation `{pattern}` does not re-include "
-                f"{relative}. {rule.source}:{rule.line} pattern `{rule.pattern}` still excludes it."
-            ),
+            message=(f"{_display(repo, path)}:{line} negation `{pattern}` does not re-include {relative}. {rule.source}:{rule.line} pattern `{rule.pattern}` still excludes it."),
             details={
                 "path": str(path),
                 "line": line,
@@ -302,10 +238,7 @@ def _negation_probe(
                 "effective_line": rule.line,
                 "effective_pattern": rule.pattern,
             },
-            recommendation=(
-                "Negate each excluded parent directory before re-including a file inside it. "
-                "This tool will not edit the ignore file."
-            ),
+            recommendation=("Negate each excluded parent directory before re-including a file inside it. This tool will not edit the ignore file."),
         )
     )
 
@@ -331,12 +264,7 @@ def _probe_path(repo: Repository, path: Path, pattern: str) -> str | None:
     return body
 
 
-def _consulted(
-    repo: Repository,
-    files: list[tuple[str, Path]],
-    analysis: Analysis,
-    config: AppConfig,
-) -> set[Path]:
+def _consulted(repo: Repository, files: list[tuple[str, Path]], analysis: Analysis, config: AppConfig) -> set[Path]:
     consulted: set[Path] = set()
     for kind, path in files:
         if not path.exists():
@@ -353,14 +281,9 @@ def _consulted(
                         id="audit.confusing",
                         category="confusing",
                         status=Status.WARN,
-                        message=(
-                            f"{relative} is ignored, so Git does not consult the rules inside it."
-                        ),
+                        message=(f"{relative} is ignored, so Git does not consult the rules inside it."),
                         details={"path": str(path), "effective_pattern": rule.pattern},
-                        recommendation=(
-                            "Re-include the parent directories before relying on this file. "
-                            "This tool will not edit it."
-                        ),
+                        recommendation=("Re-include the parent directories before relying on this file. This tool will not edit it."),
                     )
                 )
             continue
@@ -378,11 +301,7 @@ def _audit_files(repo: Repository) -> list[tuple[str, Path]]:
     return files
 
 
-def _used_keys(
-    repo: Repository,
-    entries: Sequence[ListedPath],
-    tracked: Sequence[tuple[str, Rule]],
-) -> set[tuple[str, int]]:
+def _used_keys(repo: Repository, entries: Sequence[ListedPath], tracked: Sequence[tuple[str, Rule]]) -> set[tuple[str, int]]:
     used: set[tuple[str, int]] = set()
     for entry in entries:
         if entry.rule is not None:
@@ -429,21 +348,13 @@ def _tracked_finding(path: str, rule: Rule) -> Finding:
             "line": rule.line,
             "pattern": rule.pattern,
         },
-        recommendation=(
-            f"Review whether this file should remain tracked. "
-            f"One way to stop tracking it, which this tool will not run, is: "
-            f"git rm --cached -- {path}"
-        ),
+        recommendation=(f"Review whether this file should remain tracked. One way to stop tracking it, which this tool will not run, is: git rm --cached -- {path}"),
     )
 
 
 def _pass(analysis: Analysis, identifier: str, category: str, message: str) -> None:
-    analysis.findings.append(
-        Finding(id=identifier, category=category, status=Status.PASS, message=message)
-    )
+    analysis.findings.append(Finding(id=identifier, category=category, status=Status.PASS, message=message))
 
 
 def _skip(analysis: Analysis, identifier: str, category: str, message: str) -> None:
-    analysis.findings.append(
-        Finding(id=identifier, category=category, status=Status.SKIP, message=message)
-    )
+    analysis.findings.append(Finding(id=identifier, category=category, status=Status.SKIP, message=message))

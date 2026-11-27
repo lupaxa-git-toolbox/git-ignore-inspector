@@ -235,10 +235,7 @@ def _stats(report: Report, style: Style, *, quiet: bool, output: TextIO) -> None
     if result.get("truncated"):
         output.write("\nEnumeration reached the configured limit. Some figures are incomplete.\n")
     if result.get("enumeration"):
-        output.write(
-            "\nIgnored files and directories use Git's collapsed listing. "
-            "A collapsed directory counts as one directory, not as the files inside it.\n"
-        )
+        output.write("\nIgnored files and directories use Git's collapsed listing. A collapsed directory counts as one directory, not as the files inside it.\n")
 
 
 def _recommendations(findings: list[Finding], output: TextIO) -> None:

@@ -13,22 +13,8 @@ from lupaxa.git_ignore_inspector.config import AppConfig, load_config
 from lupaxa.git_ignore_inspector.errors import ToolError
 from lupaxa.git_ignore_inspector.gitio import GitRunner
 from lupaxa.git_ignore_inspector.models import Classification, Finding, Report, Status
-from lupaxa.git_ignore_inspector.query import (
-    SourceInfo,
-    collect_sources,
-    inspect_path,
-    list_ignored,
-    open_repository,
-    require_worktree,
-    tracked_matches,
-)
-from lupaxa.git_ignore_inspector.render import (
-    Style,
-    color_enabled,
-    render_json,
-    render_text,
-    summary_counts,
-)
+from lupaxa.git_ignore_inspector.query import SourceInfo, collect_sources, inspect_path, list_ignored, open_repository, require_worktree, tracked_matches
+from lupaxa.git_ignore_inspector.render import Style, color_enabled, render_json, render_text, summary_counts
 from lupaxa.git_ignore_inspector.version import get_version
 
 _COMMANDS = ("check", "explain", "list", "sources", "tracked", "audit", "stats")
@@ -115,11 +101,7 @@ def main(argv: list[str] | None = None) -> int:
             repo_arg = cwd / repo_arg
         runner = GitRunner(verbose=options.verbose)
         repo = open_repository(runner, repo_arg)
-        config = load_config(
-            Path(options.config).expanduser() if options.config else None,
-            cwd,
-            None if repo.bare else repo.root,
-        )
+        config = load_config(Path(options.config).expanduser() if options.config else None, cwd, None if repo.bare else repo.root)
         if options.json:
             config.output = "json"
         if options.color:
@@ -135,9 +117,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
 
-def _dispatch(
-    command: str, namespace: argparse.Namespace, repo: Any, config: AppConfig, cwd: Path
-) -> Report:
+def _dispatch(command: str, namespace: argparse.Namespace, repo: Any, config: AppConfig, cwd: Path) -> Report:
     repository = None if repo.bare else str(repo.root)
     if command in {"check", "explain"}:
         require_worktree(repo)
@@ -163,13 +143,7 @@ def _dispatch(
         require_worktree(repo)
         expand = config.expand_ignored_directories or bool(namespace.files)
         listed = list_ignored(
-            repo,
-            files=bool(namespace.files),
-            directories=bool(namespace.directories),
-            expand=expand,
-            directory=namespace.directory,
-            extension=namespace.extension,
-            limit=config.max_results,
+            repo, files=bool(namespace.files), directories=bool(namespace.directories), expand=expand, directory=namespace.directory, extension=namespace.extension, limit=config.max_results
         )
         entries = [_listed(entry) for entry in listed.entries]
         groups = _groups(entries, namespace.group_by)
@@ -194,12 +168,7 @@ def _dispatch(
         require_worktree(repo)
         sources = collect_sources(repo)
         findings = _source_findings(sources)
-        return Report(
-            command=command,
-            repository=repository,
-            result={"sources": [_source(item) for item in sources], "worktree": repo.worktree},
-            findings=findings,
-        )
+        return Report(command=command, repository=repository, result={"sources": [_source(item) for item in sources], "worktree": repo.worktree}, findings=findings)
     if command == "tracked":
         require_worktree(repo)
         matches, truncated, total = tracked_matches(repo, limit=config.max_results)
@@ -228,37 +197,14 @@ def _dispatch(
             for path, rule in matches
         ]
         if not findings:
-            findings.append(
-                Finding(
-                    id="audit.tracked",
-                    category="tracked",
-                    status=Status.PASS,
-                    message="No tracked files match an ignore rule.",
-                )
-            )
+            findings.append(Finding(id="audit.tracked", category="tracked", status=Status.PASS, message="No tracked files match an ignore rule."))
         if truncated:
             findings.append(_truncated(config.max_results))
-        return Report(
-            command=command,
-            repository=repository,
-            result={"entries": entries, "total": total, "truncated": truncated},
-            findings=findings,
-            summary={"tracked_matches": total},
-        )
+        return Report(command=command, repository=repository, result={"entries": entries, "total": total, "truncated": truncated}, findings=findings, summary={"tracked_matches": total})
     analysis = analyse(repo, config)
     if command == "stats":
-        findings = [
-            item
-            for item in analysis.findings
-            if item.status == Status.FAIL or item.id == "enum.truncated"
-        ]
-        return Report(
-            command=command,
-            repository=repository,
-            result=_stats_result(analysis),
-            findings=findings,
-            summary=_stats_result(analysis),
-        )
+        findings = [item for item in analysis.findings if item.status == Status.FAIL or item.id == "enum.truncated"]
+        return Report(command=command, repository=repository, result=_stats_result(analysis), findings=findings, summary=_stats_result(analysis))
     return Report(
         command="audit",
         repository=repository,
@@ -291,9 +237,7 @@ def _stats_result(analysis: Any) -> dict[str, Any]:
         "duplicate_patterns": analysis.duplicate_groups,
         "redundant_patterns": analysis.redundant,
         "unused_rules": analysis.unused,
-        "top_patterns": [
-            {"pattern": pattern, "count": count} for pattern, count in analysis.top_patterns
-        ],
+        "top_patterns": [{"pattern": pattern, "count": count} for pattern, count in analysis.top_patterns],
         "enumeration": "collapsed",
         "truncated": analysis.truncated,
     }
@@ -320,12 +264,7 @@ def _exit_code(command: str, report: Report) -> int:
 
 def _fail(exc: ToolError, json_output: bool) -> int:
     if json_output or "--json" in sys.argv:
-        report = Report(
-            command="",
-            repository=None,
-            result={},
-            error={"code": exc.code, "message": exc.message},
-        )
+        report = Report(command="", repository=None, result={}, error={"code": exc.code, "message": exc.message})
         render_json(report)
     else:
         sys.stderr.write(f"{exc.message}\n")
@@ -432,10 +371,7 @@ def _groups(entries: list[dict[str, Any]], group_by: str | None) -> list[dict[st
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for entry in entries:
         rule = entry.get("rule") or {}
-        if group_by == "pattern":
-            key = str(rule.get("pattern") or "(no rule)")
-        else:
-            key = str(rule.get("source") or "(no source)")
+        key = str(rule.get("pattern") or "(no rule)") if group_by == "pattern" else str(rule.get("source") or "(no source)")
         grouped[key].append(entry)
     return [{"key": key, "entries": grouped[key]} for key in grouped]
 

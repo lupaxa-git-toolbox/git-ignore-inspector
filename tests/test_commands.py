@@ -84,10 +84,7 @@ def test_nested_gitignore_exclude_and_global(repo: Path, cli, git_env: Path) -> 
 
 
 def test_pattern_shapes_spaces_unicode_and_newlines(repo: Path, cli) -> None:
-    (repo / ".gitignore").write_text(
-        "/only-root.txt\nsecret/\n**/*.tmp\n\\#hash\nhas?newline.txt\n*world.txt\n",
-        encoding="utf-8",
-    )
+    (repo / ".gitignore").write_text("/only-root.txt\nsecret/\n**/*.tmp\n\\#hash\nhas?newline.txt\n*world.txt\n", encoding="utf-8")
     (repo / "only-root.txt").write_text("x", encoding="utf-8")
     nested = repo / "dir"
     nested.mkdir()
@@ -151,9 +148,7 @@ def test_tracked_audit_and_stats(repo: Path, cli) -> None:
     (repo / ".env").write_text("secret", encoding="utf-8")
     (repo / ".gitignore").write_text("# tracked first\n", encoding="utf-8")
     commit_all(repo)
-    (repo / ".gitignore").write_text(
-        "*.log\n*.log\n*\n*.nope\nlogs/\n!logs/keep.txt\n", encoding="utf-8"
-    )
+    (repo / ".gitignore").write_text("*.log\n*.log\n*\n*.nope\nlogs/\n!logs/keep.txt\n", encoding="utf-8")
     (repo / "file.log").write_text("x", encoding="utf-8")
     before = (repo / ".gitignore").read_bytes()
     head = _tree(repo)
@@ -189,15 +184,7 @@ def test_json_shape_and_exit_codes(repo: Path, cli, tmp_path: Path) -> None:
         assert code == 0
         assert err == ""
         payload = json.loads(out)
-        for key in (
-            "version",
-            "timestamp",
-            "repository",
-            "command",
-            "result",
-            "findings",
-            "summary",
-        ):
+        for key in ("version", "timestamp", "repository", "command", "result", "findings", "summary"):
             assert key in payload
         assert payload["command"] == command
         assert payload["result"]["classification"] == "IGNORED"
@@ -257,10 +244,5 @@ def test_config_quiet_and_unreadable_source(repo: Path, cli) -> None:
 
 
 def _tree(root: Path) -> str:
-    completed = __import__("subprocess").run(
-        ["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
+    completed = __import__("subprocess").run(["git", "-C", str(root), "rev-parse", "HEAD^{tree}"], check=True, capture_output=True, text=True)
     return completed.stdout.strip()
